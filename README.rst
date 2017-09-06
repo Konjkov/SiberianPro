@@ -1,7 +1,7 @@
 File watcher
 ============
 
-Тестовый проект для коипании SiberianPro
+Тестовый проект для компании SiberianPro
 
 :License: GNU GENERAL PUBLIC LICENSE
 
@@ -24,17 +24,29 @@ Cледующий набор команд позволяет развернут�
     cd SiberianPro
     pip install -r requirements.txt
 
-3. Запустите сервер
+3. Установите клиент
 
 .. code-block:: bash
 
-    cd server
-    twistd -y server.py
+    cd SiberianPro/client_pkg
+    (sudo) python setup.py install
 
-4. Запустите клиент
+4. Установите сервер
 
 .. code-block:: bash
 
-    cd server
-    twistd -y client.py
+    cd SiberianPro/server_pkg
+    (sudo) python setup.py install
 
+
+5. Запустите сервер
+
+.. code-block:: bash
+
+    twistd server
+
+6. Запустите клиент
+
+.. code-block:: bash
+
+    twistd client

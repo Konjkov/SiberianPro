@@ -1,44 +1,32 @@
-#!/usr/bin/env python3
-
 import os
 import json
-from twisted.application import service
-from twisted.application import internet
+from twisted.python import usage
 from twisted.internet import task
+from twisted.application import internet
 from twisted.internet.protocol import Protocol
 from twisted.internet.protocol import ClientFactory
-from twisted.python import usage
-
-timeout = 2.0
-
-host = '127.0.0.1'
-port = 9000
-source = 'first'
-
-
-class Options(usage.Options):
-    optParameters = [
-        ["dir", "d", '.', "Directory to watching on."],
-        ["port", "p", 9000, "The port number to send to."],
-        ["host", "h", "localhost", "Server hostname"],
-        ["src", "s", "first", "Server source name"],
-    ]
+from twisted.python import log
 
 
 class WatchClientProtocol(Protocol):
 
-    def __init__(self):
+    def __init__(self, timeout):
         self.lc = task.LoopingCall(self.sendData)
-        self.lc.start(2)
+        self.lc.start(timeout)
         self.data = {}
 
     def connectionMade(self):
-        print('connectionMade')
+        log.msg('connection Made')
         self.data = self.directoryList(self.factory.directory)
 
     def directoryList(self, directory):
+        """Возвращает список файлов в директории.
+        :param directory: 
+        :return: 
+        """
         return {
-            f: self.fileProperty(f) for f in os.listdir(directory)
+            os.path.abspath(f): self.fileProperty(f)
+            for f in os.listdir(directory)
             if os.path.isfile(f)
         }
 
@@ -76,7 +64,7 @@ class WatchClientProtocol(Protocol):
         return {
             'del': del_files,
             'add': add_files,
-            'change_files': change_file
+            'change': change_file
         }
 
     def jsonResponce(self):
@@ -104,34 +92,49 @@ class WatchClientProtocol(Protocol):
         :return: None 
         """
         if self.transport:
-            self.transport.write(self.jsonResponce().encode('latin-1'))
+            self.transport.write(self.jsonResponce().encode('utf-8'))
 
 
 class WatchClientFactory(ClientFactory):
 
-    def __init__(self, source, directory):
+    def __init__(self, source, directory, timeout):
         self.source = source
         self.directory = directory
+        self.timeout = timeout
 
     def buildProtocol(self, addr):
-        protocol = WatchClientProtocol()
+        protocol = WatchClientProtocol(self.timeout)
         protocol.factory = self
         return protocol
 
+    def clientConnectionFailed(self, connector, reason):
+        """Переподключится если соединение не установилось."""
+        connector.connect()
+
     def clientConnectionLost(self, connector, reason):
-        """If we get disconnected, reconnect to server."""
+        """Переподключится если соединение оборвалось."""
         connector.connect()
 
 
-def makeService(options={'host': host, 'port': port, 'source': source, 'directory': '.'}):
-    app = service.Application("client")
-    tcp = internet.TCPClient(
+class Options(usage.Options):
+    synopsis = "[options]"
+    longdesc = "Create client watching file changes."
+    optParameters = [
+        ["directory", "d", '.', "Directory to watching on."],
+        ["port", "p", 9000, "The port number to send to."],
+        ["host", "h", "localhost", "Server hostname"],
+        ["source", "s", "first", "Server source name"],
+        ["timeout", "t", 2.0, "Polling timeout"],
+    ]
+
+
+def makeService(options):
+    return internet.TCPClient(
         options['host'],
         options['port'],
-        WatchClientFactory(options['source'], options['directory'])
+        WatchClientFactory(
+            options['source'],
+            options['directory'],
+            options['timeout']
+        )
     )
-    tcp.setServiceParent(app)
-    return app
-
-
-application = makeService()
