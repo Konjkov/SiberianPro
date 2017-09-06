@@ -16,7 +16,10 @@ class WatchClientProtocol(Protocol):
         self.data = {}
 
     def connectionMade(self):
-        log.msg('connection Made')
+        """Запоминаем начальное состояние директории.        
+        :return: None 
+        """
+        log.msg('watching directory', self.factory.directory)
         self.data = self.directoryList(self.factory.directory)
 
     def directoryList(self, directory):
@@ -25,16 +28,18 @@ class WatchClientProtocol(Protocol):
         :return: 
         """
         return {
-            os.path.abspath(f): self.fileProperty(f)
+            os.path.join(directory, f):
+                self.fileProperty(os.path.join(directory, f))
             for f in os.listdir(directory)
-            if os.path.isfile(f)
+            if os.path.isfile(os.path.join(directory, f))
         }
 
     def fileProperty(self, file):
         """Свойство файла по которому определяется, что он изменился.
         Поскольку операция просмотра директории и последующего получения
         размера файла в целом не атомарна может возникнуть исключительная
-        ситуация.
+        ситуация, когда файл был удален в промежутке между этими двумя
+        операциями.
         :param file: 
         :return: filesize or None
         """
@@ -91,6 +96,7 @@ class WatchClientProtocol(Protocol):
         """Посылает информацию об изменениях файлов на сервер.
         :return: None 
         """
+        # log.msg('sendData')
         if self.transport:
             self.transport.write(self.jsonResponce().encode('utf-8'))
 
@@ -99,7 +105,7 @@ class WatchClientFactory(ClientFactory):
 
     def __init__(self, source, directory, timeout):
         self.source = source
-        self.directory = directory
+        self.directory = os.path.abspath(directory)
         self.timeout = timeout
 
     def buildProtocol(self, addr):
@@ -124,17 +130,17 @@ class Options(usage.Options):
         ["port", "p", 9000, "The port number to send to."],
         ["host", "h", "localhost", "Server hostname"],
         ["source", "s", "first", "Server source name"],
-        ["timeout", "t", 2.0, "Polling timeout"],
+        ["timeout", "t", 2, "Polling timeout"],
     ]
 
 
 def makeService(options):
     return internet.TCPClient(
         options['host'],
-        options['port'],
+        int(options['port']),
         WatchClientFactory(
             options['source'],
             options['directory'],
-            options['timeout']
+            int(options['timeout'])
         )
     )

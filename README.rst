@@ -43,10 +43,10 @@ Cледующий набор команд позволяет развернут�
 
 .. code-block:: bash
 
-    twistd server
+    twistd server -p 8000
 
 6. Запустите клиент
 
 .. code-block:: bash
 
-    twistd client
+    twistd client -p 8000 -d /tmp -s myserver -t 5

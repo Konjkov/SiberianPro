@@ -12,19 +12,28 @@ from twisted.python import log
 class WatchServerProtocol(Protocol):
 
     def printData(self, data):
+        """Печать в лог информаци об изменении файлов.
+        :param data: 
+        :return: 
+        """
         source = data['source']
-        for f, size in data['diffs']['add'].items():
-            log.msg('На сервере', source, 'был создан файл', f,
-                    'размером', size[1], 'байт')
-        for f, size in data['diffs']['del'].items():
-            log.msg('На сервере', source, 'был удален файл', f,
-                    'размером', size[0], 'байт')
-        for f, size in data['diffs']['change'].items():
-            log.msg('На сервере', source, 'у файла', f,
-                    'был изменен размер с ', size[0], 'до', size[1], 'байт')
+        if data['diffs'] is None:
+            log.msg('Наблюдаемая директория на сервере',
+                    source, 'была удалена')
+        else:
+            for f, size in data['diffs']['add'].items():
+                log.msg('На сервере', source, 'был создан файл', f,
+                        'размером', size[1], 'байт')
+            for f, size in data['diffs']['del'].items():
+                log.msg('На сервере', source, 'был удален файл', f,
+                        'размером', size[0], 'байт')
+            for f, size in data['diffs']['change'].items():
+                log.msg('На сервере', source, 'у файла', f,
+                        'был изменен размер с ', size[0], 'до', size[1],
+                        'байт')
 
     def dataReceived(self, data):
-        log.msg('data Received')
+        # log.msg('dataReceived')
         self.printData(json.loads(data.decode('utf-8')))
 
     def clientConnectionLost(self, connector, reason):
@@ -47,4 +56,4 @@ class Options(usage.Options):
 
 
 def makeService(options):
-    return internet.TCPServer(options['port'], WatchServerFactory())
+    return internet.TCPServer(int(options['port']), WatchServerFactory())
