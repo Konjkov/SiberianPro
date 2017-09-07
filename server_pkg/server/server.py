@@ -13,7 +13,7 @@ from twisted.python import log
 
 
 class ReconnectingConnectionPool(adbapi.ConnectionPool):
-    """Действия в случае ошики дравера psycopg2.
+    """Действия в случае ошибки дравера psycopg2.
     """
     def _runInteraction(self, interaction, *args, **kw):
         try:
