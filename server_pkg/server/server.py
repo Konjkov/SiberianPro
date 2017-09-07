@@ -1,15 +1,63 @@
 #!/usr/bin/env python3
 
 import json
+from datetime import datetime
+from psycopg2 import OperationalError
+from psycopg2 import IntegrityError
 from twisted.application import internet
-from twisted.application import service
+from twisted.enterprise import adbapi
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol
 from twisted.python import usage
 from twisted.python import log
 
 
+class ReconnectingConnectionPool(adbapi.ConnectionPool):
+    """Действия в случае ошики дравера psycopg2.
+    """
+    def _runInteraction(self, interaction, *args, **kw):
+        try:
+            return adbapi.ConnectionPool._runInteraction(
+                self, interaction, *args, **kw)
+        except OperationalError as e:
+            log.msg("psycopg2: got error %s" % e)
+            conn = self.connections.get(self.threadID())
+            self.disconnect(conn)
+        except IntegrityError as e:
+            log.msg("psycopg2: got error %s" % e)
+            conn = self.connections.get(self.threadID())
+            self.disconnect(conn)
+
+
 class WatchServerProtocol(Protocol):
+
+    def __init__(self):
+        self.dbpool = ReconnectingConnectionPool(
+            'psycopg2',
+            host='localhost',
+            port='5432',
+            database='watcher',
+            user='watcher',
+            password='watcher'
+        )
+        self.query = ('INSERT INTO "watcher_logrecord" '
+                      '(source, status, file_name, prev_size, next_size, log_time) '
+                      'VALUES (%s, %s, %s, %s, %s, %s)')
+
+    def insertIntoDB(self, source, status, file_name, prev_size, next_size):
+        return self.dbpool.runOperation(
+            self.query, (source, status, file_name, prev_size, next_size, datetime.now())
+        ).addErrback(log.err)
+
+    def loadData(self, data):
+        source = data['source']
+        if data['diffs']:
+            for f, size in data['diffs']['add'].items():
+                self.insertIntoDB(source, 1, f, size[0], size[1])
+            for f, size in data['diffs']['del'].items():
+                self.insertIntoDB(source, 2, f, size[0], size[1])
+            for f, size in data['diffs']['change'].items():
+                self.insertIntoDB(source, 3, f, size[0], size[1])
 
     def printData(self, data):
         """Печать в лог информаци об изменении файлов.
@@ -35,6 +83,7 @@ class WatchServerProtocol(Protocol):
     def dataReceived(self, data):
         # log.msg('dataReceived')
         self.printData(json.loads(data.decode('utf-8')))
+        self.loadData(json.loads(data.decode('utf-8')))
 
     def clientConnectionLost(self, connector, reason):
         log.msg('Lost connection. Reason: {}'.format(reason))

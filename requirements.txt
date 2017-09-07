@@ -4,4 +4,8 @@
 # Verified bug on Python 3.5.1
 wheel==0.29.0
 
+# Bleeding edge Twisted
 twisted>=17.5.0
+
+# Python-PostgreSQL Database Adapter
+psycopg2>=2.7.3
