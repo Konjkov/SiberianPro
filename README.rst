@@ -42,13 +42,13 @@ Cледующий набор команд позволяет развернут�
 
 .. code-block:: bash
 
-    twistd server -p 8000
+    twistd server -p 9000
 
 6. Запустите клиент
 
 .. code-block:: bash
 
-    twistd client -p 8000 -d /tmp -s myserver -t 5
+    twistd client -p 9000 -d /tmp -s myserver -t 5
 
 Развертывание REST-API
 ----------------------
