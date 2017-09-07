@@ -16,16 +16,16 @@ class WatchClientProtocol(Protocol):
         self.data = {}
 
     def connectionMade(self):
-        """Запоминаем начальное состояние директории.        
-        :return: None 
+        """Запоминаем начальное состояние директории.
+        :return: None
         """
         log.msg('watching directory', self.factory.directory)
         self.data = self.directoryList(self.factory.directory)
 
     def directoryList(self, directory):
         """Возвращает список файлов в директории.
-        :param directory: 
-        :return: 
+        :param directory:
+        :return:
         """
         return {
             os.path.join(directory, f):
@@ -40,7 +40,7 @@ class WatchClientProtocol(Protocol):
         размера файла в целом не атомарна может возникнуть исключительная
         ситуация, когда файл был удален в промежутке между этими двумя
         операциями.
-        :param file: 
+        :param file:
         :return: filesize or None
         """
         try:
@@ -50,8 +50,8 @@ class WatchClientProtocol(Protocol):
 
     def directoryDiff(self, directory):
         """Создает списки, созданныйх, удаленных и измененных файлов.
-        :param directory: 
-        :return: словарь списков 
+        :param directory:
+        :return: словарь списков
         """
         old_data, new_data = self.data, self.directoryList(directory)
         del_files = {
@@ -129,7 +129,7 @@ class Options(usage.Options):
         ["directory", "d", '.', "Directory to watching on."],
         ["port", "p", 9000, "The port number to send to."],
         ["host", "h", "localhost", "Server hostname"],
-        ["source", "s", "first", "Server source name"],
+        ["source", "s", "client", "Client name"],
         ["timeout", "t", 2, "Polling timeout"],
     ]
 

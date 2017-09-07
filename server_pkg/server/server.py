@@ -13,7 +13,7 @@ from twisted.python import log
 
 
 class ReconnectingConnectionPool(adbapi.ConnectionPool):
-    """Действия в случае ошибки дравера psycopg2.
+    """Действия в случае ошибки драйвера psycopg2.
     """
     def _runInteraction(self, interaction, *args, **kw):
         try:
@@ -60,9 +60,9 @@ class WatchServerProtocol(Protocol):
                 self.insertIntoDB(source, 3, f, size[0], size[1])
 
     def printData(self, data):
-        """Печать в лог информаци об изменении файлов.
-        :param data: 
-        :return: 
+        """Печать в лог информации об изменении файлов.
+        :param data:
+        :return:
         """
         source = data['source']
         if data['diffs'] is None:
