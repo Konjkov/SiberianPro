@@ -1,0 +1,4 @@
+--working-directory rest_api
+--url-alias /static rest_api/static
+--application-type module
+rest_api.wsgi

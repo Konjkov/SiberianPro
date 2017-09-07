@@ -1,0 +1,33 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:9.6
+    hostname: db
+    restart: always
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - ".postgres-data:/var/lib/postgresql/data"
+
+  rest_api:
+    image: grahamdumpleton/mod-wsgi-docker:python-3.5-onbuild
+    build: .
+    hostname: rest_api
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+    ports:
+      - 8000:80
+    links:
+      - db
+    depends_on:
+      - db

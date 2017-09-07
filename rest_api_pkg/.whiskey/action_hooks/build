@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eo pipefail
+
+python rest_api/manage.py collectstatic --noinput
